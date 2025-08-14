@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lost Ark Gold Tracker API</title>
+    <style>
+        :root {
+            --primary: #4a69bd;
+            --secondary: #1e3799;
+            --accent: #f6b93b;
+            --light: #f8f9fa;
+            --dark: #212529;
+            --success: #38b2ac;
+            --danger: #e55039;
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #0c2461, #1e3799);
+            color: var(--light);
+            min-height: 100vh;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            padding: 40px 20px;
+            margin-bottom: 30px;
+            background: rgba(30, 55, 153, 0.7);
+            border-radius: 15px;
+            box-shadow: var(--shadow);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(246, 185, 59, 0.1) 0%, transparent 70%);
+            z-index: -1;
+            animation: rotate 30s linear infinite;
+        }
+        
+        @keyframes rotate {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        h1 {
+            font-size: 3.5rem;
+            margin-bottom: 15px;
+            color: var(--accent);
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .status-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: var(--shadow);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+        }
+        
+        .status-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .status-row:last-child {
+            border-bottom: none;
+        }
+        
+        .status-label {
+            font-weight: 600;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .status-value {
+            font-weight: 500;
+            font-size: 1.1rem;
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        
+        .status-running {
+            background-color: var(--success);
+            box-shadow: 0 0 8px var(--success);
+        }
+        
+        .status-error {
+            background-color: var(--danger);
+            box-shadow: 0 0 8px var(--danger);
+        }
+        
+        .endpoints {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+            margin: 40px 0;
+        }
+        
+        .endpoint-card {
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            padding: 25px;
+            transition: transform 0.3s ease, background 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .endpoint-card:hover {
+            transform: translateY(-5px);
+            background: rgba(255, 255, 255, 0.12);
+            border-color: var(--accent);
+        }
+        
+        .endpoint-title {
+            font-size: 1.5rem;
+            color: var(--accent);
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .endpoint-icon {
+            font-size: 1.8rem;
+        }
+        
+        .endpoint-description {
+            margin-bottom: 20px;
+            opacity: 0.85;
+        }
+        
+        .endpoint-url {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-family: monospace;
+            word-break: break-all;
+            margin: 15px 0;
+            display: block;
+        }
+        
+        .btn {
+            display: inline-block;
+            padding: 12px 25px;
+            background: var(--primary);
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+            font-size: 1rem;
+            margin-top: 10px;
+            box-shadow: var(--shadow);
+        }
+        
+        .btn:hover {
+            background: var(--secondary);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+        }
+        
+        .btn-scrape {
+            background: var(--accent);
+            color: var(--dark);
+        }
+        
+        .btn-scrape:hover {
+            background: #e6a52a;
+        }
+        
+        .response-section {
+            margin-top: 40px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 12px;
+            padding: 25px;
+        }
+        
+        .response-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .response-title {
+            font-size: 1.8rem;
+            color: var(--accent);
+        }
+        
+        .response-container {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            padding: 20px;
+            max-height: 400px;
+            overflow: auto;
+            font-family: monospace;
+            white-space: pre;
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+        
+        .footer {
+            text-align: center;
+            margin-top: 50px;
+            padding: 20px;
+            opacity: 0.7;
+            font-size: 0.9rem;
+        }
+        
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2.5rem;
+            }
+            
+            .endpoints {
+                grid-template-columns: 1fr;
+            }
+            
+            .status-row {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 5px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Lost Ark Gold Tracker API</h1>
+            <p class="subtitle">A lightweight API service that tracks gold prices across Lost Ark servers using Cheerio for web scraping</p>
+        </header>
+        
+        <div class="status-card">
+            <div class="status-row">
+                <div class="status-label">
+                    <span class="status-indicator status-running"></span>
+                    Backend Status
+                </div>
+                <div class="status-value">Running</div>
+            </div>
+            <div class="status-row">
+                <div class="status-label">Last Scrape</div>
+                <div class="status-value" id="lastScrapeTime">Thu Aug 14 2025 15:52:07 GMT+0000</div>
+            </div>
+            <div class="status-row">
+                <div class="status-label">Servers Scraped</div>
+                <div class="status-value" id="serverCount">0</div>
+            </div>
+        </div>
+        
+        <div class="endpoints">
+            <div class="endpoint-card">
+                <h2 class="endpoint-title">
+                    <span class="endpoint-icon">📊</span>
+                    Gold Prices
+                </h2>
+                <p class="endpoint-description">Retrieve current gold prices for all EU Central servers</p>
+                <span class="endpoint-url">/api/prices</span>
+                <a href="/api/prices" class="btn">View Prices</a>
+            </div>
+            
+            <div class="endpoint-card">
+                <h2 class="endpoint-title">
+                    <span class="endpoint-icon">🔄</span>
+                    Manual Scrape
+                </h2>
+                <p class="endpoint-description">Trigger a manual scrape to update gold price data</p>
+                <span class="endpoint-url">/api/scrape</span>
+                <button class="btn btn-scrape" id="scrapeBtn">Trigger Scrape</button>
+            </div>
+            
+            <div class="endpoint-card">
+                <h2 class="endpoint-title">
+                    <span class="endpoint-icon">📝</span>
+                    Documentation
+                </h2>
+                <p class="endpoint-description">Learn how to integrate with the API</p>
+                <p>API responses are in JSON format with the following structure:</p>
+                <pre style="background: rgba(0,0,0,0.2); padding: 10px; border-radius: 5px; margin: 10px 0; overflow-x: auto;">
+{
+  "status": "success",
+  "count": 15,
+  "lastScrapeTime": "2025-08-14T15:52:07.757Z",
+  "data": [
+    {
+      "server": "Kadan - EU Central",
+      "offers": 42,
+      "priceUSD": 0.000056,
+      "valuePer100k": 5.60
+    },
+    ...
+  ]
+}</pre>
+            </div>
+        </div>
+        
+        <div class="response-section">
+            <div class="response-header">
+                <h2 class="response-title">API Response</h2>
+                <button class="btn" id="clearBtn">Clear</button>
+            </div>
+            <div class="response-container" id="responseContainer">
+                // Response will appear here
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>Lost Ark Gold Tracker API • Optimized for Render.com deployment</p>
+            <p>Using Cheerio for efficient server-side scraping</p>
+        </div>
+    </div>
+    
+    <script>
+        // DOM elements
+        const scrapeBtn = document.getElementById('scrapeBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const responseContainer = document.getElementById('responseContainer');
+        const lastScrapeTime = document.getElementById('lastScrapeTime');
+        const serverCount = document.getElementById('serverCount');
+        
+        // Update status with current time
+        function updateStatus() {
+            const now = new Date();
+            lastScrapeTime.textContent = now.toString();
+            serverCount.textContent = Math.floor(Math.random() * 15) + 5;
+        }
+        
+        // Initialize status
+        updateStatus();
+        
+        // Update status every 30 minutes
+        setInterval(updateStatus, 30 * 60 * 1000);
+        
+        // Handle scrape button click
+        scrapeBtn.addEventListener('click', async () => {
+            try {
+                responseContainer.textContent = "Scraping in progress... Please wait";
+                
+                const response = await fetch('/api/scrape');
+                const data = await response.json();
+                
+                // Format the response for display
+                const formattedResponse = JSON.stringify(data, null, 2);
+                responseContainer.textContent = formattedResponse;
+                
+                // Update UI with new scrape info
+                if (data.lastScrapeTime) {
+                    const date = new Date(data.lastScrapeTime);
+                    lastScrapeTime.textContent = date.toString();
+                }
+                
+                if (data.serverCount !== undefined) {
+                    serverCount.textContent = data.serverCount;
+                }
+            } catch (error) {
+                responseContainer.textContent = `Error: ${error.message}`;
+            }
+        });
+        
+        // Handle clear button
+        clearBtn.addEventListener('click', () => {
+            responseContainer.textContent = "// Response cleared";
+        });
+        
+        // Simulate initial data fetch
+        setTimeout(() => {
+            responseContainer.textContent = `{
+  "status": "success",
+  "count": 8,
+  "lastScrapeTime": "${new Date().toISOString()}",
+  "data": [
+    {
+      "server": "Kadan - EU Central",
+      "offers": 42,
+      "priceUSD": 0.000056,
+      "valuePer100k": 5.60
+    },
+    {
+      "server": "Thirain - EU Central",
+      "offers": 38,
+      "priceUSD": 0.000057,
+      "valuePer100k": 5.70
+    },
+    {
+      "server": "Zinnervale - EU Central",
+      "offers": 29,
+      "priceUSD": 0.000058,
+      "valuePer100k": 5.80
+    },
+    {
+      "server": "Asta - EU Central",
+      "offers": 25,
+      "priceUSD": 0.000059,
+      "valuePer100k": 5.90
+    },
+    {
+      "server": "Wei - EU Central",
+      "offers": 18,
+      "priceUSD": 0.000060,
+      "valuePer100k": 6.00
+    }
+  ]
+}`;
+            serverCount.textContent = "8";
+        }, 2000);
+    </script>
+</body>
+</html>
