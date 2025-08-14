@@ -10,19 +10,28 @@ app.use(express.static('public'));
 
 let euServerData = [];
 let lastScrapeTime = null;
+let scrapeInProgress = false;
 
-// Enhanced scraping function using Cheerio
+// Enhanced G2G scraping function with Cheerio
 async function scrapeG2G() {
+  if (scrapeInProgress) {
+    console.log('Scrape already in progress. Skipping...');
+    return euServerData;
+  }
+
+  scrapeInProgress = true;
+  console.log('Starting G2G scrape...');
+  
   try {
-    console.log('Starting G2G scrape...');
-    
-    // Fetch the G2G Lost Ark gold page
+    // Fetch the G2G Lost Ark gold page with proper headers
     const response = await axios.get('https://www.g2g.com/categories/lost-ark-gold', {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36',
-        'Accept-Language': 'en-US,en;q=0.9'
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+        'Referer': 'https://www.g2g.com/'
       },
-      timeout: 15000
+      timeout: 20000
     });
     
     const html = response.data;
@@ -30,26 +39,30 @@ async function scrapeG2G() {
     
     const rawData = [];
     
-    // Find all product cards
-    $('.row > .col-sm-6').each((i, element) => {
+    // Process each product card
+    $('div[class*="product-card-wrapper"]').each((i, element) => {
       try {
         const card = $(element);
-        const title = card.find('.product-title').text().trim();
-        const offersText = card.find('.g-chip-counter').text().trim();
-        const priceText = card.find('.amount').text().trim();
         
-        // Skip if essential data is missing
-        if (!title || !priceText) return;
+        // Extract server name
+        const serverElement = card.find('div[class*="product-title"]');
+        const server = serverElement.text().trim();
         
-        // Extract numeric values
-        const offers = parseInt(offersText.replace(/\D/g, '')) || 0;
+        // Extract price
+        const priceElement = card.find('span[class*="price-amount"]');
+        const priceText = priceElement.text().trim();
         const price = parseFloat(priceText.replace(/[^\d.]/g, '')) || 0;
         
+        // Extract offers
+        const offersElement = card.find('div[class*="g-chip-counter"]');
+        const offersText = offersElement.text().trim();
+        const offers = parseInt(offersText.replace(/\D/g, '')) || 0;
+        
         // Calculate value per 100k
-        const valuePer100k = (100000 * price).toFixed(6);
+        const valuePer100k = price > 0 ? (100000 * price).toFixed(6) : '0.000000';
         
         rawData.push({
-          server: title,
+          server,
           offers,
           priceUSD: price,
           valuePer100k
@@ -61,7 +74,7 @@ async function scrapeG2G() {
     
     // Filter for EU Central servers
     euServerData = rawData.filter(item => 
-      item.server && item.server.includes('EU Central')
+      item.server && /EU Central/i.test(item.server)
     );
     
     lastScrapeTime = new Date();
@@ -71,6 +84,8 @@ async function scrapeG2G() {
   } catch (err) {
     console.error('Scraping error:', err);
     return [];
+  } finally {
+    scrapeInProgress = false;
   }
 }
 
@@ -92,8 +107,9 @@ init();
 app.get('/api/prices', (req, res) => {
   if (euServerData.length === 0) {
     return res.json({
-      error: "No server data available yet",
-      tip: "Initial scrape takes about 10-15 seconds after server start",
+      status: 'pending',
+      message: 'No data available yet',
+      tip: 'Initial scrape takes about 10-15 seconds after server start',
       lastScrapeTime: lastScrapeTime?.toISOString() || null
     });
   }
