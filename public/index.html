@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Lost Ark Gold Tracker API</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
             --primary: #4a69bd;
@@ -43,32 +44,12 @@
             background: rgba(30, 55, 153, 0.7);
             border-radius: 15px;
             box-shadow: var(--shadow);
-            position: relative;
-            overflow: hidden;
-        }
-        
-        header::before {
-            content: '';
-            position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: radial-gradient(circle, rgba(246, 185, 59, 0.1) 0%, transparent 70%);
-            z-index: -1;
-            animation: rotate 30s linear infinite;
-        }
-        
-        @keyframes rotate {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
         }
         
         h1 {
             font-size: 3.5rem;
             margin-bottom: 15px;
             color: var(--accent);
-            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
         }
         
         .subtitle {
@@ -78,21 +59,25 @@
             margin: 0 auto;
         }
         
+        .dashboard {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+        
         .status-card {
             background: rgba(255, 255, 255, 0.1);
             backdrop-filter: blur(10px);
             border-radius: 12px;
             padding: 25px;
-            margin-bottom: 30px;
             box-shadow: var(--shadow);
-            border: 1px solid rgba(255, 255, 255, 0.15);
         }
         
         .status-row {
             display: flex;
             justify-content: space-between;
-            align-items: center;
-            padding: 15px 0;
+            padding: 12px 0;
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
         
@@ -102,89 +87,17 @@
         
         .status-label {
             font-weight: 600;
-            font-size: 1.1rem;
-            display: flex;
-            align-items: center;
-            gap: 10px;
         }
         
         .status-value {
             font-weight: 500;
-            font-size: 1.1rem;
-        }
-        
-        .status-indicator {
-            display: inline-block;
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            margin-right: 8px;
-        }
-        
-        .status-running {
-            background-color: var(--success);
-            box-shadow: 0 0 8px var(--success);
-        }
-        
-        .status-error {
-            background-color: var(--danger);
-            box-shadow: 0 0 8px var(--danger);
-        }
-        
-        .endpoints {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 25px;
-            margin: 40px 0;
-        }
-        
-        .endpoint-card {
-            background: rgba(255, 255, 255, 0.08);
-            border-radius: 12px;
-            padding: 25px;
-            transition: transform 0.3s ease, background 0.3s ease;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        
-        .endpoint-card:hover {
-            transform: translateY(-5px);
-            background: rgba(255, 255, 255, 0.12);
-            border-color: var(--accent);
-        }
-        
-        .endpoint-title {
-            font-size: 1.5rem;
-            color: var(--accent);
-            margin-bottom: 15px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-        
-        .endpoint-icon {
-            font-size: 1.8rem;
-        }
-        
-        .endpoint-description {
-            margin-bottom: 20px;
-            opacity: 0.85;
-        }
-        
-        .endpoint-url {
-            background: rgba(0, 0, 0, 0.3);
-            padding: 10px 15px;
-            border-radius: 8px;
-            font-family: monospace;
-            word-break: break-all;
-            margin: 15px 0;
-            display: block;
         }
         
         .btn {
             display: inline-block;
             padding: 12px 25px;
-            background: var(--primary);
-            color: white;
+            background: var(--accent);
+            color: var(--dark);
             text-decoration: none;
             border-radius: 8px;
             font-weight: 600;
@@ -192,54 +105,50 @@
             border: none;
             cursor: pointer;
             font-size: 1rem;
-            margin-top: 10px;
+            margin-top: 15px;
             box-shadow: var(--shadow);
+            width: 100%;
+            text-align: center;
         }
         
         .btn:hover {
-            background: var(--secondary);
-            transform: translateY(-2px);
-            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
-        }
-        
-        .btn-scrape {
-            background: var(--accent);
-            color: var(--dark);
-        }
-        
-        .btn-scrape:hover {
             background: #e6a52a;
+            transform: translateY(-2px);
         }
         
-        .response-section {
-            margin-top: 40px;
-            background: rgba(0, 0, 0, 0.2);
+        .chart-container {
+            background: rgba(255, 255, 255, 0.08);
             border-radius: 12px;
             padding: 25px;
+            height: 100%;
         }
         
-        .response-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-        
-        .response-title {
-            font-size: 1.8rem;
-            color: var(--accent);
-        }
-        
-        .response-container {
-            background: rgba(0, 0, 0, 0.3);
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 25px;
+            background: rgba(0, 0, 0, 0.2);
             border-radius: 8px;
-            padding: 20px;
-            max-height: 400px;
-            overflow: auto;
-            font-family: monospace;
-            white-space: pre;
-            font-size: 0.95rem;
-            line-height: 1.5;
+            overflow: hidden;
+        }
+        
+        .data-table th {
+            background: rgba(74, 105, 189, 0.5);
+            padding: 12px 15px;
+            text-align: left;
+        }
+        
+        .data-table td {
+            padding: 10px 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .data-table tr:last-child td {
+            border-bottom: none;
+        }
+        
+        .data-table tr:hover {
+            background: rgba(255, 255, 255, 0.05);
         }
         
         .footer {
@@ -247,22 +156,15 @@
             margin-top: 50px;
             padding: 20px;
             opacity: 0.7;
-            font-size: 0.9rem;
         }
         
         @media (max-width: 768px) {
-            h1 {
-                font-size: 2.5rem;
-            }
-            
-            .endpoints {
+            .dashboard {
                 grid-template-columns: 1fr;
             }
             
-            .status-row {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 5px;
+            h1 {
+                font-size: 2.5rem;
             }
         }
     </style>
@@ -270,183 +172,192 @@
 <body>
     <div class="container">
         <header>
-            <h1>Lost Ark Gold Tracker API</h1>
-            <p class="subtitle">A lightweight API service that tracks gold prices across Lost Ark servers using Cheerio for web scraping</p>
+            <h1>Lost Ark Gold Tracker</h1>
+            <p class="subtitle">Real-time gold prices for EU Central servers</p>
         </header>
         
-        <div class="status-card">
-            <div class="status-row">
-                <div class="status-label">
-                    <span class="status-indicator status-running"></span>
-                    Backend Status
+        <div class="dashboard">
+            <div>
+                <div class="status-card">
+                    <div class="status-row">
+                        <div class="status-label">API Status</div>
+                        <div class="status-value" id="apiStatus">Running</div>
+                    </div>
+                    <div class="status-row">
+                        <div class="status-label">Last Scrape</div>
+                        <div class="status-value" id="lastScrapeTime">Never</div>
+                    </div>
+                    <div class="status-row">
+                        <div class="status-label">Servers</div>
+                        <div class="status-value" id="serverCount">0</div>
+                    </div>
+                    <div class="status-row">
+                        <div class="status-label">Cheapest 100k</div>
+                        <div class="status-value" id="bestPrice">$0.00</div>
+                    </div>
+                    <button class="btn" id="scrapeBtn">Scrape Now</button>
                 </div>
-                <div class="status-value">Running</div>
             </div>
-            <div class="status-row">
-                <div class="status-label">Last Scrape</div>
-                <div class="status-value" id="lastScrapeTime">Thu Aug 14 2025 15:52:07 GMT+0000</div>
-            </div>
-            <div class="status-row">
-                <div class="status-label">Servers Scraped</div>
-                <div class="status-value" id="serverCount">0</div>
+            
+            <div class="chart-container">
+                <canvas id="priceChart"></canvas>
             </div>
         </div>
         
-        <div class="endpoints">
-            <div class="endpoint-card">
-                <h2 class="endpoint-title">
-                    <span class="endpoint-icon">📊</span>
-                    Gold Prices
-                </h2>
-                <p class="endpoint-description">Retrieve current gold prices for all EU Central servers</p>
-                <span class="endpoint-url">/api/prices</span>
-                <a href="/api/prices" class="btn">View Prices</a>
-            </div>
-            
-            <div class="endpoint-card">
-                <h2 class="endpoint-title">
-                    <span class="endpoint-icon">🔄</span>
-                    Manual Scrape
-                </h2>
-                <p class="endpoint-description">Trigger a manual scrape to update gold price data</p>
-                <span class="endpoint-url">/api/scrape</span>
-                <button class="btn btn-scrape" id="scrapeBtn">Trigger Scrape</button>
-            </div>
-            
-            <div class="endpoint-card">
-                <h2 class="endpoint-title">
-                    <span class="endpoint-icon">📝</span>
-                    Documentation
-                </h2>
-                <p class="endpoint-description">Learn how to integrate with the API</p>
-                <p>API responses are in JSON format with the following structure:</p>
-                <pre style="background: rgba(0,0,0,0.2); padding: 10px; border-radius: 5px; margin: 10px 0; overflow-x: auto;">
-{
-  "status": "success",
-  "count": 15,
-  "lastScrapeTime": "2025-08-14T15:52:07.757Z",
-  "data": [
-    {
-      "server": "Kadan - EU Central",
-      "offers": 42,
-      "priceUSD": 0.000056,
-      "valuePer100k": 5.60
-    },
-    ...
-  ]
-}</pre>
-            </div>
-        </div>
-        
-        <div class="response-section">
-            <div class="response-header">
-                <h2 class="response-title">API Response</h2>
-                <button class="btn" id="clearBtn">Clear</button>
-            </div>
-            <div class="response-container" id="responseContainer">
-                // Response will appear here
+        <div class="status-card">
+            <h2 style="margin-bottom: 15px; color: var(--accent);">EU Central Server Prices</h2>
+            <div class="table-responsive">
+                <table class="data-table" id="priceTable">
+                    <thead>
+                        <tr>
+                            <th>Server</th>
+                            <th>Offers</th>
+                            <th>Price per Unit (USD)</th>
+                            <th>Value per 100k</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                        <tr>
+                            <td colspan="4" style="text-align: center;">Loading data...</td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
         </div>
         
         <div class="footer">
-            <p>Lost Ark Gold Tracker API • Optimized for Render.com deployment</p>
-            <p>Using Cheerio for efficient server-side scraping</p>
+            <p>Lost Ark Gold Tracker API • Powered by Cheerio • Deployed on Render.com</p>
         </div>
     </div>
     
     <script>
         // DOM elements
         const scrapeBtn = document.getElementById('scrapeBtn');
-        const clearBtn = document.getElementById('clearBtn');
-        const responseContainer = document.getElementById('responseContainer');
-        const lastScrapeTime = document.getElementById('lastScrapeTime');
-        const serverCount = document.getElementById('serverCount');
+        const lastScrapeEl = document.getElementById('lastScrapeTime');
+        const serverCountEl = document.getElementById('serverCount');
+        const bestPriceEl = document.getElementById('bestPrice');
+        const tableBody = document.getElementById('tableBody');
         
-        // Update status with current time
-        function updateStatus() {
-            const now = new Date();
-            lastScrapeTime.textContent = now.toString();
-            serverCount.textContent = Math.floor(Math.random() * 15) + 5;
-        }
-        
-        // Initialize status
-        updateStatus();
-        
-        // Update status every 30 minutes
-        setInterval(updateStatus, 30 * 60 * 1000);
-        
-        // Handle scrape button click
-        scrapeBtn.addEventListener('click', async () => {
-            try {
-                responseContainer.textContent = "Scraping in progress... Please wait";
-                
-                const response = await fetch('/api/scrape');
-                const data = await response.json();
-                
-                // Format the response for display
-                const formattedResponse = JSON.stringify(data, null, 2);
-                responseContainer.textContent = formattedResponse;
-                
-                // Update UI with new scrape info
-                if (data.lastScrapeTime) {
-                    const date = new Date(data.lastScrapeTime);
-                    lastScrapeTime.textContent = date.toString();
+        // Chart initialization
+        const ctx = document.getElementById('priceChart').getContext('2d');
+        const priceChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Price per Unit (USD)',
+                    data: [],
+                    backgroundColor: 'rgba(246, 185, 59, 0.7)',
+                    borderColor: 'rgba(246, 185, 59, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return '$' + value.toFixed(6);
+                            }
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        labels: {
+                            color: '#f8f9fa'
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return `$${context.parsed.y.toFixed(6)} per unit`;
+                            }
+                        }
+                    }
                 }
-                
-                if (data.serverCount !== undefined) {
-                    serverCount.textContent = data.serverCount;
-                }
-            } catch (error) {
-                responseContainer.textContent = `Error: ${error.message}`;
             }
         });
         
-        // Handle clear button
-        clearBtn.addEventListener('click', () => {
-            responseContainer.textContent = "// Response cleared";
-        });
+        // Fetch and display prices
+        async function fetchPrices() {
+            try {
+                const response = await fetch('/api/prices');
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    // Update status
+                    lastScrapeEl.textContent = new Date(data.lastScrapeTime).toLocaleString();
+                    serverCountEl.textContent = data.count;
+                    
+                    // Find best price
+                    if (data.data.length > 0) {
+                        const bestPrice = Math.min(...data.data.map(item => item.priceUSD));
+                        bestPriceEl.textContent = `$${(bestPrice * 100000).toFixed(2)}`;
+                    }
+                    
+                    // Update table
+                    tableBody.innerHTML = '';
+                    data.data.forEach(item => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${item.server}</td>
+                            <td>${item.offers}</td>
+                            <td>$${item.priceUSD.toFixed(6)}</td>
+                            <td>$${(item.priceUSD * 100000).toFixed(2)}</td>
+                        `;
+                        tableBody.appendChild(row);
+                    });
+                    
+                    // Update chart
+                    priceChart.data.labels = data.data.map(item => 
+                        item.server.split(' - ')[0] || item.server.substring(0, 15)
+                    );
+                    priceChart.data.datasets[0].data = data.data.map(item => item.priceUSD);
+                    priceChart.update();
+                } else {
+                    tableBody.innerHTML = `<tr><td colspan="4" style="text-align: center;">${data.message || 'No data available'}</td></tr>`;
+                }
+            } catch (error) {
+                console.error('Error fetching prices:', error);
+                tableBody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: #e55039;">Error loading data</td></tr>`;
+            }
+        }
         
-        // Simulate initial data fetch
-        setTimeout(() => {
-            responseContainer.textContent = `{
-  "status": "success",
-  "count": 8,
-  "lastScrapeTime": "${new Date().toISOString()}",
-  "data": [
-    {
-      "server": "Kadan - EU Central",
-      "offers": 42,
-      "priceUSD": 0.000056,
-      "valuePer100k": 5.60
-    },
-    {
-      "server": "Thirain - EU Central",
-      "offers": 38,
-      "priceUSD": 0.000057,
-      "valuePer100k": 5.70
-    },
-    {
-      "server": "Zinnervale - EU Central",
-      "offers": 29,
-      "priceUSD": 0.000058,
-      "valuePer100k": 5.80
-    },
-    {
-      "server": "Asta - EU Central",
-      "offers": 25,
-      "priceUSD": 0.000059,
-      "valuePer100k": 5.90
-    },
-    {
-      "server": "Wei - EU Central",
-      "offers": 18,
-      "priceUSD": 0.000060,
-      "valuePer100k": 6.00
-    }
-  ]
-}`;
-            serverCount.textContent = "8";
-        }, 2000);
+        // Manual scrape function
+        async function triggerScrape() {
+            scrapeBtn.textContent = 'Scraping...';
+            scrapeBtn.disabled = true;
+            
+            try {
+                const response = await fetch('/api/scrape');
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    fetchPrices();
+                } else {
+                    alert(`Scrape failed: ${data.message}`);
+                }
+            } catch (error) {
+                console.error('Scrape error:', error);
+                alert('Scrape failed: ' + error.message);
+            } finally {
+                scrapeBtn.textContent = 'Scrape Now';
+                scrapeBtn.disabled = false;
+            }
+        }
+        
+        // Event listeners
+        scrapeBtn.addEventListener('click', triggerScrape);
+        
+        // Initial load
+        fetchPrices();
+        
+        // Refresh data every minute
+        setInterval(fetchPrices, 60000);
     </script>
 </body>
 </html>
